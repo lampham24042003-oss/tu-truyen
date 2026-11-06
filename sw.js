@@ -1,8 +1,8 @@
 // Tủ Truyện service worker.
 // App files: network first (always the newest version when online), cache only as offline fallback.
 // Fonts: cache first.
-const VERSION = 'tt-v4';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
+const VERSION = 'tt-v5';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/book-180.png', './icons/book-192.png', './icons/book-512.png', './icons/book-maskable-512.png'];
 
 self.addEventListener('install', e => {
   // cache: 'reload' skips the browser's HTTP cache so a new version never stores stale files

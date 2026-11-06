@@ -10,9 +10,10 @@
 <meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#F3F3F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0B0C10" media="(prefers-color-scheme: dark)">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-180.png?v=3">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest?v=5">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/book-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/book-192.png">
+<link rel="shortcut icon" href="icons/book-192.png">
 <title>Tủ Truyện</title>
 <script>try{var t=JSON.parse(localStorage.getItem('tt-apptheme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1282,7 +1283,7 @@ app.addEventListener('click', function (e) {
 })();
 
 /* ---------- offline ---------- */
-var APP_VERSION = 4;
+var APP_VERSION = 5;
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   var hadController = !!navigator.serviceWorker.controller, reloaded = false;
   // a new version took over: reload once so the newest app shows (skip while typing in the editor)
