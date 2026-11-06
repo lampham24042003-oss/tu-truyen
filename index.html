@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tủ Truyện">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161A21" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<title>Tủ Truyện</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0}
+html{padding-top:0}
+/* Layout: one portrait column (phone-shaped, centered on desktop); library → story → reader/editor as stacked views. */
+:root{
+  --bg:#ECEEF1; --surface:#FFFFFF; --surface-2:#F5F6F8; --ink:#151922; --muted:#5D6574; --line:#DADEE5;
+  --accent:#0E7A6A; --accent-ink:#FFFFFF; --accent-soft:#DCF0EB;
+  --prompt:#6A4CC0; --prompt-soft:#ECE7FA; --prompt-line:#C6B8EC; --prompt-field:#F8F6FD; --danger:#BE3B28; --danger-soft:#FBE6E2;
+  --shadow:0 1px 2px rgba(20,25,34,.06),0 8px 24px rgba(20,25,34,.06);
+  --f-ui:"Be Vietnam Pro",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-read:"Literata",Georgia,"Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --col:560px; --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1015; --surface:#161A21; --surface-2:#1C212A; --ink:#E7E9ED; --muted:#959DAB; --line:#2A303B;
+  --accent:#3CC0A6; --accent-ink:#06211C; --accent-soft:#11332D; --prompt:#AE98F2; --prompt-soft:#241E3A; --prompt-line:#4A3F70; --prompt-field:#1C1A2A;
+  --danger:#F07A66; --danger-soft:#3A1E19; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --surface:#161A21; --surface-2:#1C212A; --ink:#E7E9ED; --muted:#959DAB; --line:#2A303B;
+  --accent:#3CC0A6; --accent-ink:#06211C; --accent-soft:#11332D; --prompt:#AE98F2; --prompt-soft:#241E3A; --prompt-line:#4A3F70; --prompt-field:#1C1A2A;
+  --danger:#F07A66; --danger-soft:#3A1E19; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.5;min-height:100%}
+body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bar-bg,var(--surface))}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{width:20px;height:20px;flex:none}
+
+.shell{max-width:var(--col);margin:0 auto;min-height:100vh;position:relative}
+@media (min-width:600px){.shell{background:var(--bg);box-shadow:0 0 0 1px var(--line)}}
+.pad{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);transition:transform .25s ease}
+.bar-in{display:flex;align-items:center;gap:6px;min-height:54px;padding-block:6px}
+.bar h1{font-family:var(--f-read);font-size:21px;font-weight:700;margin:0;flex:1;min-width:0;letter-spacing:-.01em}
+.bar .ttl{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--ink)}
+.ib:hover{background:var(--surface-2)}
+.ib:active{transform:scale(.94)}
+.sync{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block}
+.sync.local i{background:#D29A1E}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:12px;font-weight:600;font-size:15px;background:var(--surface-2);border:1px solid var(--line)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.pp{background:var(--prompt-soft);color:var(--prompt);border-color:transparent}
+.btn.dan{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.btn.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.fab{position:fixed;z-index:25;right:max(20px,calc((100vw - var(--col))/2 + 20px));bottom:calc(20px + env(safe-area-inset-bottom,0px));height:54px;padding:0 20px 0 16px;border-radius:27px;background:var(--accent);color:var(--accent-ink);font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(14,122,106,.35)}
+.fab:active{transform:scale(.96)}
+
+/* Library */
+.search{display:flex;align-items:center;gap:8px;height:44px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);padding:0 12px;color:var(--muted)}
+.search input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:16px;color:var(--ink)}
+.lib-head{padding-block:14px 6px;display:flex;flex-direction:column;gap:12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--line);font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stats-row{display:flex;gap:16px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stats-row b{color:var(--ink);font-weight:600}
+.list{display:flex;flex-direction:column;gap:10px;padding-block:14px 110px}
+.card{display:flex;gap:14px;align-items:stretch;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;text-align:left;width:100%;box-shadow:var(--shadow)}
+.card:active{transform:scale(.99)}
+.cover{width:58px;height:77px;flex:none;border-radius:8px 10px 10px 8px;position:relative;overflow:hidden;display:grid;place-items:center;color:#fff;font-family:var(--f-read);font-weight:700;font-size:26px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.cover::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:rgba(255,255,255,.28)}
+.cover.big{width:92px;height:123px;font-size:42px;border-radius:10px 14px 14px 10px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.card-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;justify-content:center}
+.card-t{font-family:var(--f-read);font-weight:600;font-size:17px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-g{font-size:12.5px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:12.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.empty{text-align:center;padding:48px 12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty h2{font-family:var(--f-read);color:var(--ink);font-size:22px;margin:0;text-wrap:balance}
+.empty p{margin:0;max-width:34ch}
+.empty .art{width:110px;height:110px;color:var(--accent);opacity:.9}
+.empty .art svg{width:100%;height:100%}
+
+/* Story */
+.hero{background:var(--surface);border-bottom:1px solid var(--line);padding-block:18px 0}
+.hero-top{display:flex;gap:16px;align-items:flex-end}
+.hero h2{font-family:var(--f-read);font-size:24px;line-height:1.25;margin:0 0 6px;text-wrap:balance}
+.hero-act{display:flex;gap:8px;margin-top:16px}
+.hero-act .btn{flex:1}
+.tabs{display:flex;gap:4px;margin-top:16px}
+.tab{flex:1;height:44px;font-weight:600;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab.on{color:var(--ink);border-color:var(--ink)}
+.tab .n{font-size:11px;background:var(--surface-2);border-radius:8px;padding:1px 6px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ch-list{display:flex;flex-direction:column;padding-block:8px 110px}
+.ch{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line);text-align:left;width:100%}
+.ch:active{background:var(--surface-2)}
+.ch-n{width:44px;flex:none;font-family:var(--f-read);font-size:20px;font-weight:600;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.ch-n small{display:block;font-family:var(--f-ui);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:3px}
+.ch-b{flex:1;min-width:0}
+.ch-t{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch.read .ch-t{color:var(--muted);font-weight:500}
+.ch .meta{margin-top:2px}
+.tag-p{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--prompt);background:var(--prompt-soft);border-radius:6px;padding:1px 6px}
+.tag-cur{font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 6px}
+.ch-go{color:var(--muted)}
+
+/* Prompt blocks */
+.pr-list{display:flex;flex-direction:column;gap:12px;padding-block:14px 110px}
+.pr{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.pr-h{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-bottom:1px dashed var(--line)}
+.pr-h .lbl{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-h .lbl small{color:var(--prompt);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;margin-right:6px}
+.pr-body{font-family:var(--f-mono);font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word;padding:12px 14px;color:var(--ink)}
+.pr.clamp .pr-body{max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 60%,transparent)}
+.pr-more{width:100%;padding:8px;font-size:12.5px;font-weight:600;color:var(--prompt);border-top:1px solid var(--line)}
+.pr-empty{padding:12px 14px;color:var(--muted);font-size:13px;font-style:italic}
+.info{display:flex;flex-direction:column;gap:16px;padding-block:16px 110px}
+.info-row{display:flex;flex-direction:column;gap:4px}
+.info-row .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.info-row .v{white-space:pre-wrap;word-break:break-word}
+.danger-zone{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* Editor */
+.ed{display:flex;flex-direction:column;gap:14px;padding-block:14px 40px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px;justify-content:space-between}
+.field label .cnt{font-weight:500;font-variant-numeric:tabular-nums}
+.in{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 13px;font-size:16px;outline:none;transition:border-color .15s}
+.in:focus{border-color:var(--accent)}
+textarea.in{resize:vertical;line-height:1.6;min-height:120px}
+textarea.in.pmt{font-family:var(--f-mono);font-size:14px;border-color:var(--prompt-line);background:var(--prompt-field)}
+textarea.in.pmt:focus{border-color:var(--prompt)}
+textarea.in.body{font-family:var(--f-read);font-size:16px;min-height:46vh}
+.row2{display:grid;grid-template-columns:92px 1fr;gap:10px}
+.seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;height:36px;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.seg button.on.p{color:var(--prompt)}
+.hint{font-size:12px;color:var(--muted)}
+.draft-note{font-size:12.5px;background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+
+/* Reader */
+.reader{--rs:19px;--lh:1.8;background:var(--rbg);color:var(--rfg);min-height:100vh;touch-action:pan-y;
+  --rbg:var(--surface);--rfg:var(--ink);--rmut:var(--muted);--rline:var(--line)}
+.reader.t-paper{--rbg:#FAF6EE;--rfg:#2B2620;--rmut:#857B6C;--rline:#E6DECF}
+.reader.t-sepia{--rbg:#EFE3C8;--rfg:#43351F;--rmut:#86734F;--rline:#DCCBA5}
+.reader.t-white{--rbg:#FFFFFF;--rfg:#1C1C1C;--rmut:#777;--rline:#E6E6E6}
+.reader.t-night{--rbg:#121417;--rfg:#C8C5BE;--rmut:#7D7A74;--rline:#24272C}
+.reader .bar{background:var(--rbg);color:var(--rfg);border-color:var(--rline)}
+.reader .bar .ib{color:var(--rfg)}
+.reader .bar.hide{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) - 4px))}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;background:var(--accent);width:0}
+.r-tabs{display:flex;gap:6px;justify-content:center;padding-block:0 10px}
+.r-tabs button{height:30px;padding:0 14px;border-radius:15px;font-size:12.5px;font-weight:600;color:var(--rmut);border:1px solid var(--rline)}
+.r-tabs button.on{background:var(--rfg);color:var(--rbg);border-color:var(--rfg)}
+.r-tabs button.on.p{background:var(--prompt);border-color:var(--prompt);color:#fff}
+.r-head{padding-block:36px 8px;text-align:center}
+.r-head .k{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rmut);font-weight:600}
+.r-head h2{font-family:var(--f-read);font-weight:700;font-size:calc(var(--rs)*1.45);line-height:1.25;margin:10px 0 0;text-wrap:balance}
+.r-head .orn{color:var(--rmut);margin-top:16px;letter-spacing:.5em}
+.prose{font-size:var(--rs);line-height:var(--lh);padding-block:18px 24px;overflow-wrap:break-word;hyphens:manual}
+.prose.serif{font-family:var(--f-read)}
+.prose.sans{font-family:var(--f-ui)}
+.prose.just p{text-align:justify}
+.prose p{margin:0 0 .9em}
+.prose.indent p{text-indent:1.4em;margin:0 0 .35em}
+.prose h3{font-size:1.1em;margin:1.4em 0 .6em;text-align:center}
+.prose .scene{text-align:center;color:var(--rmut);margin:1.2em 0;letter-spacing:.4em}
+.prose.serif>p:first-of-type::first-letter{font-size:2.6em;float:left;line-height:.9;margin:.06em .1em 0 0;font-weight:700;color:var(--accent)}
+.prose.pmt{font-family:var(--f-mono);font-size:calc(var(--rs)*.78);line-height:1.7;white-space:pre-wrap}
+.pmt-box{border:1px dashed var(--prompt-line);border-radius:14px;padding:16px;margin-top:8px;background:rgba(120,90,210,.07)}
+.r-nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-block:8px calc(40px + env(safe-area-inset-bottom,0px))}
+.r-nav button{border:1px solid var(--rline);border-radius:14px;padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0;color:var(--rfg)}
+.r-nav button.nx{text-align:right;align-items:flex-end}
+.r-nav small{font-size:11px;color:var(--rmut);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.r-nav span{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.r-nav button[disabled]{opacity:.35}
+.zoom-pill{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(20,22,26,.86);color:#fff;font-weight:600;font-size:14px;padding:8px 16px;border-radius:20px;z-index:40;pointer-events:none;opacity:0;transition:opacity .2s;font-variant-numeric:tabular-nums}
+.zoom-pill.on{opacity:1}
+.r-end{text-align:center;color:var(--rmut);font-size:13px;padding-block:8px 18px}
+
+/* Sheets, toast */
+.scrim{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,12,16,.42);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .18s ease}
+.sheet{background:var(--surface);width:100%;max-width:var(--col);border-radius:20px 20px 0 0;max-height:92vh;overflow:auto;padding-block:8px calc(20px + env(safe-area-inset-bottom,0px));animation:up .24s cubic-bezier(.2,.8,.2,1)}
+.grip{width:38px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.sheet h3{margin:0 0 4px;font-family:var(--f-read);font-size:20px}
+.sheet .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+.sheet-in{display:flex;flex-direction:column;gap:14px}
+.sheet-act{display:flex;gap:10px;margin-top:4px}
+.sheet-act .btn{flex:1}
+.opt{display:flex;flex-direction:column;gap:8px}
+.opt .k{font-size:12px;font-weight:600;color:var(--muted)}
+.sz{display:flex;align-items:center;gap:10px}
+.sz input[type=range]{flex:1;accent-color:var(--accent)}
+.sz .v{width:42px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.themes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.themes button{height:52px;border-radius:12px;border:2px solid var(--line);font-family:var(--f-read);font-weight:600;font-size:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.themes button small{font-family:var(--f-ui);font-size:10px;font-weight:600;margin-top:4px;opacity:.75}
+.themes button.on{border-color:var(--accent)}
+.menu{display:flex;flex-direction:column}
+.menu button{display:flex;align-items:center;gap:12px;padding:14px 4px;font-size:15px;font-weight:500;border-bottom:1px solid var(--line);text-align:left}
+.menu button:last-child{border-bottom:0}
+.menu button.d{color:var(--danger)}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;z-index:60;opacity:0;transition:.22s;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+.skel{height:84px;border-radius:var(--r);background:linear-gradient(90deg,var(--surface) 0,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:sh 1.2s infinite;border:1px solid var(--line)}
+@keyframes sh{to{background-position:-200% 0}}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell" id="app"></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="zoom-pill" id="zpill"></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+
+<script>
+(() => {
+/* ---------- icons ---------- */
+const I = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  aa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-13 5 13M5 14h6"/><path d="M14.5 19l3.5-9 3.5 9M15.6 16.2h4.8"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  ul:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>',
+  shelf:'<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="26" width="16" height="66" rx="3"/><rect x="38" y="18" width="18" height="74" rx="3"/><path d="M60 32l14-4 16 62-14 4z"/><path d="M10 96h100"/><path d="M42 30h10M42 80h10M22 38h8"/></svg>'
+};
+
+/* ---------- utils ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const words = t => { t = (t || '').trim(); return t ? t.split(/\s+/).length : 0; };
+const fmtN = n => (n || 0).toLocaleString('vi-VN');
+const ago = ts => {
+  if (!ts) return '';
+  const d = (Date.now() - ts) / 1000;
+  if (d < 60) return 'vừa xong';
+  if (d < 3600) return Math.floor(d / 60) + ' phút trước';
+  if (d < 86400) return Math.floor(d / 3600) + ' giờ trước';
+  if (d < 86400 * 30) return Math.floor(d / 86400) + ' ngày trước';
+  return new Date(ts).toLocaleDateString('vi-VN');
+};
+const hue = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.codePointAt(0)) >>> 0; return h % 360; };
+const coverStyle = s => { const h = hue(s.title + (s.id || '')); return `background:linear-gradient(155deg,hsl(${h} 46% 46%),hsl(${(h + 38) % 360} 52% 28%))`; };
+const initial = t => (String(t || '?').trim()[0] || '?').toUpperCase();
+const ls = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2000); }
+async function copyText(text, label) {
+  try { await navigator.clipboard.writeText(text); toast(label || 'Đã copy'); }
+  catch {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    let ok = false; try { ok = document.execCommand('copy'); } catch {}
+    ta.remove(); toast(ok ? (label || 'Đã copy') : 'Không copy được — hãy chọn và copy tay');
+  }
+}
+function inline(s) {
+  return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])\*(?!\s)(.+?)\*(?=[\s.,!?;:)]|$)/g, '$1<em>$2</em>').replace(/(^|[\s(])_(?!\s)(.+?)_(?=[\s.,!?;:)]|$)/g, '$1<em>$2</em>');
+}
+function renderText(t) {
+  let html = '';
+  for (const raw of String(t || '').replace(/\r\n?/g, '\n').split('\n')) {
+    const l = raw.trim(); if (!l) continue;
+    if (/^([*~\-=•·]\s*){3,}$/.test(l)) { html += '<div class="scene">* * *</div>'; continue; }
+    const h = l.match(/^#{1,6}\s+(.*)$/); if (h) { html += `<h3>${inline(h[1])}</h3>`; continue; }
+    html += `<p>${inline(l)}</p>`;
+  }
+  return html || '<p style="color:var(--rmut);font-style:italic">Chương này chưa có nội dung.</p>';
+}
+
+/* ---------- storage: IndexedDB on this device (falls back to localStorage) ---------- */
+function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+function txDone(t) { return new Promise((res, rej) => { t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('abort')); }); }
+function readFile(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsText(f); }); }
+const Store = {
+  mode: 'loading', idb: null, persisted: false,
+  _subs: [],
+  async init() {
+    try {
+      if (!window.indexedDB) throw new Error('no idb');
+      const open = indexedDB.open('tu-truyen', 1);
+      open.onupgradeneeded = () => {
+        const db = open.result;
+        if (!db.objectStoreNames.contains('stories')) db.createObjectStore('stories', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('chapters')) db.createObjectStore('chapters', { keyPath: 'id' }).createIndex('storyId', 'storyId');
+      };
+      this.idb = await Promise.race([req(open), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))]);
+      this.mode = 'device';
+    } catch (e) { console.warn('IndexedDB unavailable, using localStorage', e); this.mode = 'local'; }
+    try { if (navigator.storage && navigator.storage.persist) this.persisted = await navigator.storage.persist(); } catch (e) {}
+  },
+  _L() { return ls.get('tt-local-v1', { stories: {}, chapters: {} }); },
+  _S(d) { ls.set('tt-local-v1', d); },
+  _emit() { this._subs.slice().forEach(f => f()); },
+  _watch(fn, cb, err) {
+    const run = () => fn().then(list => cb(list, { fromCache: false }), e => err && err(e));
+    this._subs.push(run); run();
+    return () => { this._subs = this._subs.filter(x => x !== run); };
+  },
+  async allStories() {
+    if (this.mode === 'device') return req(this.idb.transaction('stories').objectStore('stories').getAll());
+    return Object.values(this._L().stories);
+  },
+  watchStories(cb, err) { return this._watch(() => this.allStories(), cb, err); },
+  watchChapters(sid, cb, err) { return this._watch(() => this.getChapters(sid), cb, err); },
+  async getChapters(sid) {
+    if (this.mode === 'device') return req(this.idb.transaction('chapters').objectStore('chapters').index('storyId').getAll(sid));
+    return Object.values(this._L().chapters[sid] || {});
+  },
+  async saveStory(st) {
+    if (this.mode === 'device') { const t = this.idb.transaction('stories', 'readwrite'); t.objectStore('stories').put(st); await txDone(t); }
+    else { const d = this._L(); d.stories[st.id] = st; this._S(d); }
+    this._emit();
+  },
+  async saveChapter(sid, ch) {
+    const c = Object.assign({}, ch, { storyId: sid });
+    if (this.mode === 'device') { const t = this.idb.transaction('chapters', 'readwrite'); t.objectStore('chapters').put(c); await txDone(t); }
+    else { const d = this._L(); if (!d.chapters[sid]) d.chapters[sid] = {}; d.chapters[sid][c.id] = c; this._S(d); }
+    this._emit();
+  },
+  async deleteChapter(sid, cid) {
+    if (this.mode === 'device') { const t = this.idb.transaction('chapters', 'readwrite'); t.objectStore('chapters').delete(cid); await txDone(t); }
+    else { const d = this._L(); if (d.chapters[sid]) delete d.chapters[sid][cid]; this._S(d); }
+    this._emit();
+  },
+  async deleteStory(sid) {
+    if (this.mode === 'device') {
+      const chs = await this.getChapters(sid);
+      const t = this.idb.transaction(['stories', 'chapters'], 'readwrite');
+      chs.forEach(c => t.objectStore('chapters').delete(c.id));
+      t.objectStore('stories').delete(sid);
+      await txDone(t);
+    } else { const d = this._L(); delete d.stories[sid]; delete d.chapters[sid]; this._S(d); }
+    this._emit();
+  }
+};
+async function withRetry(fn) { return fn(); }
+function errMsg(e) {
+  const n = e && (e.name || e.code);
+  if (n === 'QuotaExceededError') return 'Bộ nhớ máy đầy. Xoá bớt ảnh/video hoặc truyện cũ rồi thử lại.';
+  return 'Chưa lưu được, thử lại nhé.';
+}
+
+/* ---------- state ---------- */
+const S = {
+  view: 'library', stories: [], storiesReady: false, slow: false,
+  q: '', sort: ls.get('tt-sort', 'updated'),
+  storyId: null, chapters: [], chReady: false, unCh: null, storyTab: 'chapters',
+  chapterId: null, readerTab: 'story', editing: null, expanded: new Set()
+};
+const prefs = Object.assign({ size: 19, lh: 1.8, font: 'serif', theme: 'auto', just: false, indent: false }, ls.get('tt-prefs', {}));
+const savePrefs = () => ls.set('tt-prefs', prefs);
+const lastRead = ls.get('tt-last', {});        // storyId -> chapterId
+const posMap = ls.get('tt-pos', {});           // chapterId -> ratio
+const readSet = new Set(ls.get('tt-read', []));
+
+const story = () => S.stories.find(s => s.id === S.storyId);
+const sortedCh = () => [...S.chapters].sort((a, b) => ((a.num == null ? 0 : a.num) - (b.num == null ? 0 : b.num)) || (a.createdAt || 0) - (b.createdAt || 0));
+
+/* ---------- render: library ---------- */
+function syncBadge() {
+  if (Store.mode === 'device') return '<span class="sync" title="Lưu trong máy, chạy không cần mạng"><i></i>Lưu trên máy</span>';
+  if (Store.mode === 'local') return '<span class="sync local" title="Đang lưu tạm"><i></i>Lưu tạm</span>';
+  return '';
+}
+function renderLibrary() {
+  document.documentElement.style.setProperty('--bar-bg', 'var(--surface)');
+  const q = S.q.trim().toLowerCase();
+  let list = S.stories.filter(s => !q || (s.title || '').toLowerCase().includes(q) || (s.genre || '').toLowerCase().includes(q));
+  const sorters = { updated: (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0), title: (a, b) => (a.title || '').localeCompare(b.title || '', 'vi'), created: (a, b) => (b.createdAt || 0) - (a.createdAt || 0) };
+  list.sort(sorters[S.sort] || sorters.updated);
+  const totCh = S.stories.reduce((a, s) => a + (s.count || 0), 0);
+  const totW = S.stories.reduce((a, s) => a + (s.words || 0), 0);
+
+  let body;
+  if (!S.storiesReady) {
+    body = `<div class="list pad">${S.slow ? '<p class="hint" style="text-align:center">Chưa kết nối được kho, đang thử lại…</p>' : ''}<div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`;
+  } else if (!S.stories.length) {
+    body = `<div class="empty pad"><div class="art">${I.shelf}</div><h2>Tủ truyện đang trống</h2>
+      <p>Tạo một truyện, rồi dán từng chương vào. Mỗi chương lưu riêng prompt và nội dung.</p>
+      <button class="btn pri" data-act="new-story">${I.plus}Tạo truyện đầu tiên</button>
+      <button class="btn sm" data-act="sample">Thêm truyện mẫu để xem thử</button></div>`;
+  } else if (!list.length) {
+    body = `<div class="empty pad"><p>Không có truyện nào khớp “${esc(S.q)}”.</p></div>`;
+  } else {
+    body = `<div class="list pad">${list.map(s => `
+      <button class="card" data-act="open-story" data-id="${s.id}">
+        <div class="cover" style="${coverStyle(s)}">${esc(initial(s.title))}</div>
+        <div class="card-b">
+          ${s.genre ? `<div class="card-g">${esc(s.genre)}</div>` : ''}
+          <div class="card-t">${esc(s.title || 'Chưa đặt tên')}</div>
+          <div class="meta"><span>${fmtN(s.count)} chương</span><span>${fmtN(s.words)} chữ</span><span>${ago(s.updatedAt)}</span></div>
+        </div>
+      </button>`).join('')}</div>`;
+  }
+  app.innerHTML = `
+    <header class="bar"><div class="bar-in pad"><h1>Tủ Truyện</h1>${syncBadge()}<button class="ib" data-act="settings" aria-label="Cài đặt">${I.gear}</button></div></header>
+    ${isIOS() && !isStandalone() && !ls.get('tt-hide-install', false) ? `<div class="pad" style="padding-block:12px 0"><div class="draft-note"><span>Bấm <b>Chia sẻ</b> → <b>Thêm vào MH chính</b> để cài app và giữ truyện vĩnh viễn trên máy.</span><button class="btn sm" data-act="hide-install">Ẩn</button></div></div>` : ''}
+    ${S.stories.length ? `<div class="lib-head pad">
+      <label class="search">${I.search}<input id="q" type="search" placeholder="Tìm truyện, thể loại…" value="${esc(S.q)}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>
+      <div class="stats-row"><span><b>${fmtN(S.stories.length)}</b> truyện</span><span><b>${fmtN(totCh)}</b> chương</span><span><b>${fmtN(totW)}</b> chữ</span></div>
+      <div class="chips">${[['updated', 'Mới cập nhật'], ['created', 'Mới tạo'], ['title', 'Tên A–Z']].map(([k, l]) => `<button class="chip ${S.sort === k ? 'on' : ''}" data-act="sort" data-k="${k}">${l}</button>`).join('')}</div>
+    </div>` : ''}
+    ${body}
+    ${S.stories.length ? `<button class="fab" data-act="new-story">${I.plus}Truyện mới</button>` : ''}`;
+  const qi = $('#q');
+  if (qi) qi.addEventListener('input', e => { S.q = e.target.value; const pos = e.target.selectionStart; renderLibrary(); const n = $('#q'); n.focus(); n.setSelectionRange(pos, pos); });
+}
+
+/* ---------- render: story ---------- */
+function renderStory() {
+  document.documentElement.style.setProperty('--bar-bg', 'var(--surface)');
+  const s = story(); if (!s) { go('library'); return; }
+  const chs = sortedCh();
+  const last = lastRead[s.id] && chs.find(c => c.id === lastRead[s.id]);
+  const nPrompt = chs.filter(c => (c.prompt || '').trim()).length + ((s.prompt || '').trim() ? 1 : 0);
+  let tab;
+  if (!S.chReady) tab = `<div class="list pad"><div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div></div>`;
+  else if (S.storyTab === 'chapters') {
+    tab = chs.length ? `<div class="ch-list pad">${chs.map(c => `
+      <button class="ch ${readSet.has(c.id) ? 'read' : ''}" data-act="read" data-id="${c.id}">
+        <div class="ch-n"><small>Chương</small>${esc(c.num == null ? '–' : c.num)}</div>
+        <div class="ch-b"><div class="ch-t">${esc(c.title || 'Chương ' + (c.num == null ? '' : c.num))}</div>
+          <div class="meta"><span>${fmtN(c.words)} chữ</span>${(c.prompt || '').trim() ? '<span class="tag-p">PROMPT</span>' : ''}${last && last.id === c.id ? '<span class="tag-cur">ĐANG ĐỌC</span>' : ''}</div></div>
+        <span class="ch-go">${I.right}</span>
+      </button>`).join('')}</div>`
+      : `<div class="empty pad"><p>Chưa có chương nào. Bấm <b>Chương mới</b> rồi dán prompt và nội dung vào.</p><button class="btn pri" data-act="new-ch">${I.plus}Chương mới</button></div>`;
+  } else if (S.storyTab === 'prompts') {
+    const items = [];
+    items.push({ key: 'master', label: '<small>Tổng</small>Prompt gốc / bối cảnh', text: s.prompt || '' });
+    chs.forEach(c => items.push({ key: c.id, label: `<small>Ch.${esc(c.num)}</small>${esc(c.title || '')}`, text: c.prompt || '', ch: c.id }));
+    tab = `<div class="pr-list pad">
+      <div style="display:flex;gap:8px"><button class="btn sm pp" data-act="copy-all-prompts">${I.copy}Copy tất cả prompt</button></div>
+      ${items.map(it => {
+        const long = (it.text.match(/\n/g) || []).length > 5 || it.text.length > 360;
+        const open = S.expanded.has(it.key);
+        return `<div class="pr ${long && !open ? 'clamp' : ''}">
+          <div class="pr-h"><div class="lbl">${it.label}</div>
+            ${it.text.trim() ? `<button class="btn sm pp" data-act="copy-prompt" data-k="${it.key}">${I.copy}Copy</button>` : ''}
+            <button class="ib" style="width:34px;height:34px" data-act="${it.ch ? 'edit-ch' : 'edit-story'}" data-id="${it.ch || ''}" data-focus="prompt" aria-label="Sửa">${I.edit}</button></div>
+          ${it.text.trim() ? `<div class="pr-body">${esc(it.text)}</div>${long ? `<button class="pr-more" data-act="expand" data-k="${it.key}">${open ? 'Thu gọn' : 'Xem hết'}</button>` : ''}` : `<div class="pr-empty">Chưa có prompt.</div>`}
+        </div>`;
+      }).join('')}</div>`;
+  } else {
+    tab = `<div class="info pad">
+      <div class="info-row"><span class="k">Tên truyện</span><span class="v">${esc(s.title)}</span></div>
+      <div class="info-row"><span class="k">Thể loại / tag</span><span class="v">${esc(s.genre || '—')}</span></div>
+      <div class="info-row"><span class="k">Ghi chú</span><span class="v">${esc(s.note || '—')}</span></div>
+      <div class="info-row"><span class="k">Tạo lúc</span><span class="v">${s.createdAt ? new Date(s.createdAt).toLocaleString('vi-VN') : '—'}</span></div>
+      <div class="danger-zone"><button class="btn" data-act="edit-story">${I.edit}Sửa thông tin</button><button class="btn dan" data-act="del-story">${I.trash}Xoá truyện</button></div>
+    </div>`;
+  }
+  app.innerHTML = `
+    <header class="bar"><div class="bar-in pad"><button class="ib" data-act="home" aria-label="Về tủ truyện">${I.back}</button><div class="ttl">${esc(s.title)}</div><button class="ib" data-act="story-menu" aria-label="Thêm">${I.more}</button></div></header>
+    <section class="hero"><div class="pad">
+      <div class="hero-top"><div class="cover big" style="${coverStyle(s)}">${esc(initial(s.title))}</div>
+        <div style="min-width:0;flex:1">${s.genre ? `<div class="card-g">${esc(s.genre)}</div>` : ''}<h2>${esc(s.title)}</h2>
+        <div class="meta"><span>${fmtN(chs.length)} chương</span><span>${fmtN(chs.reduce((a, c) => a + (c.words || 0), 0))} chữ</span></div></div></div>
+      <div class="hero-act">
+        <button class="btn pri" data-act="continue" ${chs.length ? '' : 'disabled'}>${I.book}${last ? 'Đọc tiếp Ch.' + esc(last.num) : 'Đọc từ đầu'}</button>
+        <button class="btn" data-act="new-ch">${I.plus}Chương mới</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab ${S.storyTab === 'chapters' ? 'on' : ''}" data-act="stab" data-k="chapters">Chương <span class="n">${chs.length}</span></button>
+        <button class="tab ${S.storyTab === 'prompts' ? 'on' : ''}" data-act="stab" data-k="prompts">Prompt <span class="n">${nPrompt}</span></button>
+        <button class="tab ${S.storyTab === 'info' ? 'on' : ''}" data-act="stab" data-k="info">Thông tin</button>
+      </div></div></section>
+    ${tab}
+    ${S.storyTab !== 'info' && chs.length ? `<button class="fab" data-act="new-ch">${I.plus}Chương mới</button>` : ''}`;
+}
+
+/* ---------- render: editor ---------- */
+function draftKey() { return 'tt-draft-' + S.storyId + '-' + (S.editing.id || 'new'); }
+function renderEditor() {
+  document.documentElement.style.setProperty('--bar-bg', 'var(--surface)');
+  const e = S.editing;
+  const draft = ls.get(draftKey(), null);
+  const useDraft = draft && (draft.prompt !== (e.prompt || '') || draft.content !== (e.content || '') || draft.title !== (e.title || ''));
+  const v = useDraft ? draft : e;
+  const attrs = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-gramm="false"';
+  app.innerHTML = `
+    <header class="bar"><div class="bar-in pad"><button class="ib" data-act="ed-cancel" aria-label="Quay lại">${I.back}</button><div class="ttl">${e.id ? 'Sửa chương' : 'Chương mới'}</div><button class="btn sm pri" data-act="ed-save" id="ed-save">${I.check}Lưu</button></div></header>
+    <div class="ed pad">
+      ${useDraft ? `<div class="draft-note"><span>Đã khôi phục bản nháp chưa lưu.</span><button class="btn sm" data-act="ed-discard">Bỏ nháp</button></div>` : ''}
+      <div class="row2">
+        <div class="field"><label for="ed-num">Số chương</label><input class="in" id="ed-num" type="number" inputmode="numeric" value="${esc(v.num == null ? '' : v.num)}" ${attrs}></div>
+        <div class="field"><label for="ed-title">Tên chương</label><input class="in" id="ed-title" type="text" placeholder="Không bắt buộc" value="${esc(v.title || '')}" ${attrs}></div>
+      </div>
+      <div class="seg" role="tablist">
+        <button data-act="ed-jump" data-k="prompt" class="on p">${I.spark}Prompt</button>
+        <button data-act="ed-jump" data-k="content">${I.book}Nội dung truyện</button>
+      </div>
+      <div class="field"><label for="ed-prompt"><span style="color:var(--prompt)">Prompt đã dùng để gen chương này</span><span class="cnt" id="c-prompt"></span></label>
+        <textarea class="in pmt" id="ed-prompt" rows="6" placeholder="Dán prompt vào đây…" ${attrs}>${esc(v.prompt || '')}</textarea></div>
+      <div class="field"><label for="ed-content"><span>Nội dung chương</span><span class="cnt" id="c-content"></span></label>
+        <textarea class="in body" id="ed-content" placeholder="Dán nội dung chương vào đây… (dòng đầu dạng “Chương 5: Tên” sẽ tự điền số và tên chương)" ${attrs}>${esc(v.content || '')}</textarea></div>
+      <p class="hint">Bản nháp tự lưu trên máy khi bạn gõ. Bấm <b>Lưu</b> để cất vào tủ.</p>
+      <button class="btn pri" data-act="ed-save">${I.check}Lưu chương</button>
+    </div>`;
+  const P = $('#ed-prompt'), C = $('#ed-content'), T = $('#ed-title'), N = $('#ed-num');
+  const count = () => { $('#c-prompt').textContent = fmtN(words(P.value)) + ' chữ'; $('#c-content').textContent = fmtN(words(C.value)) + ' chữ · ' + fmtN(C.value.length) + ' ký tự'; };
+  let dt;
+  const saveDraft = () => { clearTimeout(dt); dt = setTimeout(() => ls.set(draftKey(), { num: N.value, title: T.value, prompt: P.value, content: C.value }), 400); };
+  [P, C, T, N].forEach(x => x.addEventListener('input', () => { count(); saveDraft(); }));
+  C.addEventListener('paste', () => setTimeout(() => {
+    if (T.value.trim()) return;
+    const lines = C.value.replace(/\r\n?/g, '\n').split('\n');
+    const i = lines.findIndex(l => l.trim());
+    if (i < 0) return;
+    const m = lines[i].trim().replace(/^#+\s*/, '').replace(/\*\*/g, '').match(/^(?:chương|chuong|chapter|ch\.?)\s*(\d+)\s*[:.\-–—]?\s*(.*)$/i);
+    if (!m) return;
+    N.value = m[1]; T.value = m[2].trim();
+    lines.splice(i, 1); C.value = lines.join('\n').replace(/^\n+/, '');
+    count(); saveDraft(); toast('Đã tự điền Chương ' + m[1]);
+  }, 0));
+  count();
+  if (e.focus === 'prompt') P.focus({ preventScroll: true });
+}
+
+/* ---------- render: reader ---------- */
+function readerTheme() { return prefs.theme === 'auto' ? '' : 't-' + prefs.theme; }
+function renderReader(keepScroll) {
+  const s = story(); const chs = sortedCh();
+  const idx = chs.findIndex(c => c.id === S.chapterId);
+  const c = chs[idx]; if (!s || !c) { go('story'); return; }
+  const prev = chs[idx - 1], next = chs[idx + 1];
+  const bg = { paper: '#FAF6EE', sepia: '#EFE3C8', white: '#FFFFFF', night: '#121417' }[prefs.theme];
+  document.documentElement.style.setProperty('--bar-bg', bg || 'var(--surface)');
+  const y = window.scrollY;
+  const isP = S.readerTab === 'prompt';
+  app.innerHTML = `
+  <div class="reader ${readerTheme()}" id="reader" style="--rs:${prefs.size}px;--lh:${prefs.lh}">
+    <header class="bar" id="rbar"><div class="bar-in pad"><button class="ib" data-act="back-story" aria-label="Về danh sách chương">${I.back}</button>
+      <div class="ttl" style="font-weight:500;font-size:13.5px;opacity:.8">${esc(s.title)}</div>
+      <button class="ib" data-act="aa" aria-label="Cỡ chữ và giao diện">${I.aa}</button><button class="ib" data-act="ch-menu" aria-label="Thêm">${I.more}</button></div>
+      <div class="r-tabs pad"><button class="${isP ? '' : 'on'}" data-act="rtab" data-k="story">Truyện</button><button class="${isP ? 'on p' : ''}" data-act="rtab" data-k="prompt">Prompt</button></div>
+      <div class="progress" id="prog"></div></header>
+    <article class="pad">
+      <div class="r-head"><div class="k">Chương ${esc(c.num)}${isP ? ' · Prompt' : ''}</div>${c.title ? `<h2>${esc(c.title)}</h2>` : ''}<div class="orn">· · ·</div></div>
+      ${isP
+        ? `<div class="pmt-box"><div class="prose pmt">${(c.prompt || '').trim() ? esc(c.prompt) : '<span style="color:var(--rmut);font-style:italic">Chương này chưa lưu prompt.</span>'}</div></div>
+           <div style="display:flex;gap:8px;justify-content:center;margin:16px 0 28px">${(c.prompt || '').trim() ? `<button class="btn sm pp" data-act="copy-ch-prompt">${I.copy}Copy prompt</button>` : ''}<button class="btn sm" data-act="edit-ch" data-id="${c.id}" data-focus="prompt">${I.edit}Sửa</button></div>`
+        : `<div class="prose ${prefs.font} ${prefs.just ? 'just' : ''} ${prefs.indent ? 'indent' : ''}" id="prose">${renderText(c.content)}</div>
+           <div class="r-end">Hết chương ${esc(c.num)} · ${fmtN(c.words)} chữ</div>`}
+      <nav class="r-nav">
+        <button data-act="goch" data-id="${prev ? prev.id : ''}" ${prev ? '' : 'disabled'}><small>‹ Trước</small><span>${prev ? 'Ch.' + esc(prev.num) + (prev.title ? ' · ' + esc(prev.title) : '') : 'Không có'}</span></button>
+        <button class="nx" data-act="goch" data-id="${next ? next.id : ''}" ${next ? '' : 'disabled'}><small>Sau ›</small><span>${next ? 'Ch.' + esc(next.num) + (next.title ? ' · ' + esc(next.title) : '') : 'Đã hết'}</span></button>
+      </nav>
+    </article>
+  </div>`;
+  if (keepScroll) window.scrollTo(0, y);
+  else {
+    const r = !isP && posMap[c.id];
+    requestAnimationFrame(() => { const max = document.documentElement.scrollHeight - innerHeight; window.scrollTo(0, r && r < .98 ? r * max : 0); onScroll(); });
+  }
+  lastRead[s.id] = c.id; ls.set('tt-last', lastRead);
+}
+
+/* ---------- reader: scroll, progress, pinch-to-resize text ---------- */
+let lastY = 0, posT;
+function onScroll() {
+  if (S.view !== 'reader') return;
+  const max = document.documentElement.scrollHeight - innerHeight;
+  const r = max > 0 ? Math.min(1, window.scrollY / max) : 1;
+  const p = $('#prog'); if (p) p.style.width = (r * 100) + '%';
+  const bar = $('#rbar');
+  if (bar && !pinch) { const y = window.scrollY; if (y > lastY + 6 && y > 120) bar.classList.add('hide'); else if (y < lastY - 6 || y < 60) bar.classList.remove('hide'); lastY = y; }
+  if (S.readerTab === 'story' && S.chapterId) {
+    clearTimeout(posT);
+    posT = setTimeout(() => { posMap[S.chapterId] = r; ls.set('tt-pos', posMap); if (r > .9 && !readSet.has(S.chapterId)) { readSet.add(S.chapterId); ls.set('tt-read', [...readSet]); } }, 300);
+  }
+}
+addEventListener('scroll', onScroll, { passive: true });
+
+let pinch = null, zT, raf = 0;
+function setSize(n, anchor) {
+  n = Math.max(13, Math.min(40, Math.round(n * 2) / 2));
+  if (n === prefs.size) return;
+  const max0 = document.documentElement.scrollHeight - innerHeight;
+  const ratio = anchor != null ? anchor : (max0 > 0 ? window.scrollY / max0 : 0);
+  prefs.size = n;
+  const r = $('#reader'); if (r) r.style.setProperty('--rs', n + 'px');
+  const max1 = document.documentElement.scrollHeight - innerHeight;
+  window.scrollTo(0, ratio * max1);
+  const zp = $('#zpill'); zp.textContent = 'Cỡ chữ ' + n; zp.classList.add('on');
+  clearTimeout(zT); zT = setTimeout(() => { zp.classList.remove('on'); savePrefs(); }, 700);
+  const sl = $('#o-size'); if (sl) { sl.value = n; $('#o-size-v').textContent = n; }
+}
+const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+document.addEventListener('touchstart', e => {
+  if (S.view !== 'reader' || e.touches.length !== 2 || document.querySelector('.scrim')) return;
+  const max = document.documentElement.scrollHeight - innerHeight;
+  pinch = { d: dist(e.touches), size: prefs.size, anchor: max > 0 ? window.scrollY / max : 0 };
+  e.preventDefault();
+}, { passive: false });
+document.addEventListener('touchmove', e => {
+  if (!pinch || e.touches.length !== 2) return;
+  e.preventDefault();
+  const k = dist(e.touches) / pinch.d;
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setSize(pinch ? pinch.size * k : prefs.size, pinch && pinch.anchor));
+}, { passive: false });
+document.addEventListener('touchend', e => { if (pinch && e.touches.length < 2) { pinch = null; savePrefs(); } });
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => { if (S.view === 'reader') e.preventDefault(); }, { passive: false }));
+// Trackpad pinch / ctrl+scroll on Mac → resize text instead of zooming the page
+document.addEventListener('wheel', e => {
+  if (S.view !== 'reader' || !e.ctrlKey) return;
+  e.preventDefault(); setSize(prefs.size * Math.exp(-e.deltaY * 0.01));
+}, { passive: false });
+document.addEventListener('keydown', e => {
+  if (S.view !== 'reader' || document.querySelector('.scrim')) return;
+  if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setSize(prefs.size + 1); }
+  else if ((e.metaKey || e.ctrlKey) && e.key === '-') { e.preventDefault(); setSize(prefs.size - 1); }
+  else if (!e.metaKey && !e.ctrlKey && e.key === 'ArrowRight') { const b = document.querySelector('.r-nav .nx:not([disabled])'); b && b.click(); }
+  else if (!e.metaKey && !e.ctrlKey && e.key === 'ArrowLeft') { const b = document.querySelector('.r-nav button:not(.nx):not([disabled])'); b && b.click(); }
+});
+
+/* ---------- sheets ---------- */
+function sheet(html, onMount) {
+  closeSheet();
+  const sc = document.createElement('div'); sc.className = 'scrim';
+  sc.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grip"></div><div class="pad sheet-in">${html}</div></div>`;
+  sc.addEventListener('click', e => { if (e.target === sc) closeSheet(); });
+  document.body.appendChild(sc);
+  document.body.style.overflow = 'hidden';
+  onMount && onMount(sc);
+  return sc;
+}
+function closeSheet() { document.querySelectorAll('.scrim').forEach(x => x.remove()); document.body.style.overflow = ''; }
+function confirmSheet(title, sub, okLabel, onOk) {
+  sheet(`<div><h3>${title}</h3><p class="sub">${sub}</p></div><div class="sheet-act"><button class="btn" data-x="no">Huỷ</button><button class="btn dan" data-x="ok">${okLabel}</button></div>`, sc => {
+    sc.querySelector('[data-x=no]').onclick = closeSheet;
+    sc.querySelector('[data-x=ok]').onclick = async ev => { ev.currentTarget.disabled = true; await onOk(); closeSheet(); };
+  });
+}
+function storySheet(st) {
+  const isNew = !st;
+  const attrs = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+  sheet(`<div><h3>${isNew ? 'Truyện mới' : 'Sửa truyện'}</h3><p class="sub">Prompt gốc là phần bối cảnh, nhân vật, văn phong dùng chung cho cả truyện.</p></div>
+    <div class="field"><label for="st-title">Tên truyện</label><input class="in" id="st-title" value="${esc((st && st.title) || '')}" placeholder="Ví dụ: Kiếm Lai Phong Vân" ${attrs}></div>
+    <div class="field"><label for="st-genre">Thể loại / tag</label><input class="in" id="st-genre" value="${esc((st && st.genre) || '')}" placeholder="Tiên hiệp, xuyên không…" ${attrs}></div>
+    <div class="field"><label for="st-prompt"><span style="color:var(--prompt)">Prompt gốc / bối cảnh</span></label><textarea class="in pmt" id="st-prompt" rows="5" placeholder="Dán system prompt, bối cảnh, danh sách nhân vật…" ${attrs}>${esc((st && st.prompt) || '')}</textarea></div>
+    <div class="field"><label for="st-note">Ghi chú</label><textarea class="in" id="st-note" rows="2" style="min-height:70px" placeholder="Model đã dùng, ý tưởng tiếp theo…" ${attrs}>${esc((st && st.note) || '')}</textarea></div>
+    <div class="sheet-act"><button class="btn" data-x="no">Huỷ</button><button class="btn pri" data-x="ok">${isNew ? 'Tạo truyện' : 'Lưu'}</button></div>`, sc => {
+    sc.querySelector('[data-x=no]').onclick = closeSheet;
+    if (st && st.focusPrompt) setTimeout(() => $('#st-prompt').focus(), 50); else if (isNew) setTimeout(() => $('#st-title').focus(), 50);
+    sc.querySelector('[data-x=ok]').onclick = async ev => {
+      const title = $('#st-title').value.trim();
+      if (!title) { $('#st-title').focus(); toast('Cần đặt tên truyện'); return; }
+      ev.currentTarget.disabled = true;
+      const now = Date.now();
+      const { focusPrompt, ...base } = st || {};
+      const data = { ...(st ? base : { id: uid(), createdAt: now, count: 0, words: 0 }), title, genre: $('#st-genre').value.trim(), prompt: $('#st-prompt').value, note: $('#st-note').value, updatedAt: now };
+      try { await withRetry(() => Store.saveStory(data)); closeSheet(); toast(isNew ? 'Đã tạo truyện' : 'Đã lưu');
+        if (isNew) { upsertStoryLocal(data); openStory(data.id); } }
+      catch (e) { ev.currentTarget.disabled = false; toast(errMsg(e)); }
+    };
+  });
+}
+function upsertStoryLocal(d) { const i = S.stories.findIndex(s => s.id === d.id); if (i < 0) S.stories.push(d); else S.stories[i] = d; }
+function readerOptions() {
+  const T = [['auto', 'Aa', 'Tự động'], ['white', 'Aa', 'Trắng'], ['paper', 'Aa', 'Giấy'], ['sepia', 'Aa', 'Sepia'], ['night', 'Aa', 'Đêm']];
+  const sw = { auto: 'background:var(--surface);color:var(--ink)', white: 'background:#fff;color:#1c1c1c', paper: 'background:#FAF6EE;color:#2B2620', sepia: 'background:#EFE3C8;color:#43351F', night: 'background:#121417;color:#C8C5BE' };
+  sheet(`<div><h3>Giao diện đọc</h3><p class="sub">Mẹo: chụm/mở 2 ngón trên trang đọc để đổi cỡ chữ, chữ tự xuống dòng.</p></div>
+    <div class="opt"><span class="k">Cỡ chữ</span><div class="sz"><button class="ib" data-o="sz-" aria-label="Nhỏ hơn" style="font-size:14px;font-weight:700">A−</button><input type="range" id="o-size" min="13" max="40" step="1" value="${prefs.size}"><button class="ib" data-o="sz+" aria-label="Lớn hơn" style="font-size:19px;font-weight:700">A+</button><span class="v" id="o-size-v">${prefs.size}</span></div></div>
+    <div class="opt"><span class="k">Giãn dòng</span><div class="seg">${[1.5, 1.65, 1.8, 2].map(v => `<button data-o="lh" data-v="${v}" class="${prefs.lh == v ? 'on' : ''}">${v}</button>`).join('')}</div></div>
+    <div class="opt"><span class="k">Kiểu chữ</span><div class="seg"><button data-o="font" data-v="serif" class="${prefs.font === 'serif' ? 'on' : ''}" style="font-family:var(--f-read)">Có chân</button><button data-o="font" data-v="sans" class="${prefs.font === 'sans' ? 'on' : ''}">Không chân</button></div></div>
+    <div class="opt"><span class="k">Trình bày đoạn</span><div class="seg"><button data-o="just" class="${prefs.just ? 'on' : ''}">Căn đều 2 bên</button><button data-o="indent" class="${prefs.indent ? 'on' : ''}">Thụt đầu dòng</button></div></div>
+    <div class="opt"><span class="k">Màu nền</span><div class="themes">${T.map(([k, a, l]) => `<button data-o="theme" data-v="${k}" class="${prefs.theme === k ? 'on' : ''}" style="${sw[k]}">${a}<small>${l}</small></button>`).join('')}</div></div>
+    <button class="btn" data-x="close">Xong</button>`, sc => {
+    sc.querySelector('[data-x=close]').onclick = closeSheet;
+    sc.querySelector('#o-size').oninput = e => setSize(+e.target.value);
+    sc.addEventListener('click', e => {
+      const b = e.target.closest('[data-o]'); if (!b) return;
+      const o = b.dataset.o;
+      if (o === 'sz-') return setSize(prefs.size - 1);
+      if (o === 'sz+') return setSize(prefs.size + 1);
+      if (o === 'lh') prefs.lh = +b.dataset.v;
+      if (o === 'font') prefs.font = b.dataset.v;
+      if (o === 'theme') prefs.theme = b.dataset.v;
+      if (o === 'just') prefs.just = !prefs.just;
+      if (o === 'indent') prefs.indent = !prefs.indent;
+      savePrefs(); renderReader(true);
+      sc.querySelectorAll(`[data-o="${o}"]`).forEach(x => x.classList.toggle('on', o === 'just' ? prefs.just : o === 'indent' ? prefs.indent : String(prefs[o]) === b.dataset.v));
+    });
+  });
+}
+const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+async function exportBackup() {
+  toast('Đang gom dữ liệu…');
+  const out = { app: 'tu-truyen', version: 1, exportedAt: new Date().toISOString(), stories: [] };
+  for (const s of S.stories) out.stories.push(Object.assign({}, s, { chapters: await Store.getChapters(s.id) }));
+  const name = 'tu-truyen-' + new Date().toISOString().slice(0, 10) + '.json';
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+  try {
+    const file = new File([blob], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); ls.set('tt-lastbackup', Date.now()); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  ls.set('tt-lastbackup', Date.now()); toast('Đã xuất ' + name);
+}
+async function settingsSheet() {
+  let usage = '';
+  try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); usage = (e.usage / 1048576).toFixed(1) + ' MB đã dùng'; } } catch (e) {}
+  const lb = ls.get('tt-lastbackup', 0);
+  const where = Store.mode === 'device' ? 'Truyện nằm trong bộ nhớ của chính máy này, không gửi lên đâu cả.' : 'Trình duyệt đang chặn bộ nhớ chính, đang lưu tạm (giới hạn ~5 MB). Đừng dùng tab ẩn danh.';
+  const keep = isIOS() && !isStandalone()
+    ? '<b>Quan trọng:</b> hãy bấm Chia sẻ → “Thêm vào MH chính” và chỉ mở app từ icon đó. Mở trong tab Safari thường, iOS có thể tự xoá dữ liệu nếu lâu ngày không mở.'
+    : 'Dữ liệu được giữ cho tới khi bạn tự xoá truyện hoặc xoá app khỏi màn hình chính.';
+  sheet(`<div><h3>Cài đặt & sao lưu</h3><p class="sub">${where} ${keep}</p>
+    <p class="sub" style="margin-top:-6px">${usage ? usage + ' · ' : ''}${lb ? 'Sao lưu gần nhất: ' + ago(lb) : 'Chưa sao lưu lần nào'}</p></div>
+    <div class="menu">
+      <button data-x="export">${I.dl}Xuất bản sao lưu (.json) — lưu vào Tệp/iCloud</button>
+      <button data-x="import">${I.ul}Nhập từ bản sao lưu</button>
+    </div>
+    <button class="btn" data-x="close">Đóng</button>`, sc => {
+    sc.querySelector('[data-x=close]').onclick = closeSheet;
+    sc.querySelector('[data-x=export]').onclick = () => exportBackup().catch(() => toast('Chưa xuất được, thử lại'));
+    sc.querySelector('[data-x=import]').onclick = () => $('#importFile').click();
+  });
+}
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const d = JSON.parse(await readFile(f));
+    if (!d || !Array.isArray(d.stories)) throw new Error('bad');
+    closeSheet(); toast('Đang nhập ' + d.stories.length + ' truyện…');
+    for (const s of d.stories) {
+      const { chapters = [], ...st } = s; if (!st.id) st.id = uid();
+      await withRetry(() => Store.saveStory(st));
+      for (const c of chapters) { if (!c.id) c.id = uid(); await withRetry(() => Store.saveChapter(st.id, c)); }
+    }
+    toast('Đã nhập xong');
+  } catch (err) { toast(err && err.code ? errMsg(err) : 'File không đúng định dạng sao lưu'); }
+});
+
+/* ---------- navigation & data ---------- */
+let chTimer;
+function openStory(id) {
+  if (S.storyId !== id) {
+    S.unCh && S.unCh(); S.chapters = []; S.chReady = false; S.storyId = id; S.storyTab = 'chapters'; S.expanded.clear();
+    clearTimeout(chTimer); chTimer = setTimeout(() => { if (!S.chReady) toast('Mạng chậm, đang tải chương…'); }, 10000);
+    S.unCh = Store.watchChapters(id, (list) => {
+      S.chapters = list; S.chReady = true; clearTimeout(chTimer);
+      if (S.view === 'story') renderStory();
+      else if (S.view === 'reader' && !document.querySelector('.scrim')) renderReader(true);
+    }, () => { S.chReady = true; clearTimeout(chTimer); toast('Không tải được chương'); if (S.view === 'story') renderStory(); });
+  }
+  go('story');
+}
+function go(view) {
+  S.view = view; closeSheet();
+  if (view === 'library') renderLibrary();
+  else if (view === 'story') renderStory();
+  else if (view === 'editor') renderEditor();
+  else if (view === 'reader') renderReader();
+  if (view !== 'reader') window.scrollTo(0, 0);
+}
+function openEditor(chId, focus) {
+  const chs = sortedCh();
+  const c = chId ? chs.find(x => x.id === chId) : null;
+  S.editing = c ? { ...c, focus } : { id: null, num: chs.length ? Math.max(...chs.map(x => +x.num || 0)) + 1 : 1, title: '', prompt: '', content: '' };
+  S.editFrom = S.view; go('editor');
+}
+async function saveEditor(btns) {
+  const s = story(); const e = S.editing;
+  const num = parseInt($('#ed-num').value, 10);
+  const content = $('#ed-content').value, prompt = $('#ed-prompt').value, title = $('#ed-title').value.trim();
+  if (!content.trim() && !prompt.trim()) { toast('Chưa có nội dung hay prompt'); return; }
+  const now = Date.now();
+  const ch = { id: e.id || uid(), num: isNaN(num) ? (sortedCh().length + 1) : num, title, prompt, content, words: words(content), createdAt: e.createdAt || now, updatedAt: now };
+  btns.forEach(b => b.disabled = true);
+  try {
+    await withRetry(() => Store.saveChapter(s.id, ch));
+    const list = S.chapters.filter(x => x.id !== ch.id).concat(ch);
+    const upd = { ...s, count: list.length, words: list.reduce((a, x) => a + (x.words || 0), 0), updatedAt: now };
+    upsertStoryLocal(upd);
+    await withRetry(() => Store.saveStory(upd)).catch(() => {});
+    if (!S.chapters.find(x => x.id === ch.id)) S.chapters.push(ch); else S.chapters = list;
+    ls.del(draftKey());
+    toast('Đã lưu chương ' + ch.num);
+    if (S.editFrom === 'reader') { S.chapterId = ch.id; go('reader'); } else go('story');
+  } catch (err) { btns.forEach(b => b.disabled = false); toast(errMsg(err)); }
+}
+async function deleteChapter(cid) {
+  const s = story();
+  await withRetry(() => Store.deleteChapter(s.id, cid));
+  S.chapters = S.chapters.filter(x => x.id !== cid);
+  const upd = { ...s, count: S.chapters.length, words: S.chapters.reduce((a, x) => a + (x.words || 0), 0), updatedAt: Date.now() };
+  upsertStoryLocal(upd); await withRetry(() => Store.saveStory(upd)).catch(() => {});
+  toast('Đã xoá chương'); go('story');
+}
+async function addSample() {
+  const now = Date.now(); const sid = uid();
+  const chs = [
+    { num: 1, title: 'Mưa trên phố cổ', prompt: 'Viết chương 1 (khoảng 600 chữ), giọng văn trầm, ngôi thứ ba.\nNhân vật: Lam (28 tuổi, thợ sửa đồng hồ), bà Tư (chủ quán nước).\nBối cảnh: Hội An, mùa mưa. Mở đầu bằng tiếng chuông đồng hồ lạ.',
+      content: 'Mưa rơi trên mái ngói rêu phong từ chiều, thứ mưa dai dẳng chỉ phố cổ mới có.\n\nLam ngồi sau quầy, kính lúp kẹp bên mắt, tay xoay nhẹ chiếc tua vít nhỏ như sợi tóc. Tiệm sửa đồng hồ của anh nằm cuối con hẻm, nơi khách du lịch hiếm khi lạc tới.\n\n“Cậu còn thức đó hả?” — bà Tư ló đầu qua khung cửa, chiếc áo mưa nhỏ nước tong tong.\n\nAnh chưa kịp trả lời thì từ góc phòng vang lên một tiếng *tinh* trong trẻo. Chiếc đồng hồ quả lắc đã nằm im ba mươi năm, bỗng dưng điểm giờ.\n\n***\n\nKim chỉ đúng mười hai giờ, dù đồng hồ trên tay Lam mới tám giờ tối.' },
+    { num: 2, title: 'Người khách không tên', prompt: 'Tiếp chương 2: một người khách lạ mang tới chiếc đồng hồ giống hệt chiếc quả lắc. Giữ nhịp chậm, kết bằng một câu hỏi bỏ ngỏ.',
+      content: 'Sáng hôm sau, mưa tạnh. Người khách đến khi Lam vừa kéo cửa.\n\nÔng ta đặt lên quầy một chiếc đồng hồ bỏ túi, vỏ bạc đã xỉn màu. Mặt số khắc cùng một hoa văn với chiếc quả lắc trong góc tiệm.\n\n“Nó dừng đúng nửa đêm qua,” ông nói. “Cậu có biết tại sao không?”' }
+  ];
+  const st = { id: sid, title: 'Người Gác Giờ (truyện mẫu)', genre: 'Huyền bí · Mẫu', prompt: 'Bạn là nhà văn Việt Nam. Viết truyện dài kỳ huyền bí, văn phong trầm, giàu hình ảnh mưa và đồ cổ. Mỗi chương 500–800 chữ.', note: 'Truyện mẫu để xem thử, xoá được trong tab Thông tin.', createdAt: now, updatedAt: now, count: 2, words: 0 };
+  const full = chs.map((c, i) => ({ id: uid() + i, ...c, words: words(c.content), createdAt: now + i, updatedAt: now + i }));
+  st.words = full.reduce((a, c) => a + c.words, 0);
+  try { await withRetry(() => Store.saveStory(st)); for (const c of full) await withRetry(() => Store.saveChapter(sid, c)); upsertStoryLocal(st); openStory(sid); }
+  catch (e) { toast(errMsg(e)); }
+}
+
+/* ---------- events ---------- */
+app.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, id = b.dataset.id;
+  const s = story();
+  switch (a) {
+    case 'home': S.unCh && S.unCh(); S.unCh = null; S.storyId = null; go('library'); break;
+    case 'settings': settingsSheet(); break;
+    case 'hide-install': ls.set('tt-hide-install', true); renderLibrary(); break;
+    case 'sort': S.sort = b.dataset.k; ls.set('tt-sort', S.sort); renderLibrary(); break;
+    case 'new-story': storySheet(null); break;
+    case 'sample': b.disabled = true; addSample(); break;
+    case 'open-story': openStory(id); break;
+    case 'stab': S.storyTab = b.dataset.k; renderStory(); break;
+    case 'new-ch': openEditor(null); break;
+    case 'edit-ch': openEditor(id || S.chapterId, b.dataset.focus); break;
+    case 'edit-story': storySheet({ ...s, focusPrompt: b.dataset.focus === 'prompt' }); break;
+    case 'del-story': confirmSheet('Xoá truyện này?', `“${esc(s.title)}” và toàn bộ ${S.chapters.length} chương sẽ bị xoá vĩnh viễn.`, 'Xoá truyện', async () => {
+      try { await Store.deleteStory(s.id); S.stories = S.stories.filter(x => x.id !== s.id); S.unCh && S.unCh(); S.unCh = null; S.storyId = null; toast('Đã xoá truyện'); go('library'); } catch (er) { toast(errMsg(er)); } }); break;
+    case 'story-menu': sheet(`<div class="menu"><button data-x="edit">${I.edit}Sửa thông tin & prompt gốc</button><button data-x="copyall">${I.copy}Copy toàn bộ truyện</button><button data-x="del" class="d">${I.trash}Xoá truyện</button></div><button class="btn" data-x="close">Đóng</button>`, sc => {
+      sc.querySelector('[data-x=close]').onclick = closeSheet;
+      sc.querySelector('[data-x=edit]').onclick = () => storySheet(s);
+      sc.querySelector('[data-x=copyall]').onclick = () => { copyText(sortedCh().map(c => `Chương ${c.num}${c.title ? ': ' + c.title : ''}\n\n${c.content || ''}`).join('\n\n\n'), 'Đã copy ' + S.chapters.length + ' chương'); closeSheet(); };
+      sc.querySelector('[data-x=del]').onclick = () => { S.storyTab = 'info'; closeSheet(); renderStory(); app.querySelector('[data-act=del-story]').click(); };
+    }); break;
+    case 'continue': { const chs = sortedCh(); const l = lastRead[s.id]; S.chapterId = (chs.find(c => c.id === l) || chs[0]).id; S.readerTab = 'story'; go('reader'); break; }
+    case 'read': S.chapterId = id; S.readerTab = 'story'; go('reader'); break;
+    case 'expand': S.expanded.has(b.dataset.k) ? S.expanded.delete(b.dataset.k) : S.expanded.add(b.dataset.k); renderStory(); break;
+    case 'copy-prompt': { const k = b.dataset.k; const t = k === 'master' ? s.prompt : (S.chapters.find(c => c.id === k) || {}).prompt; copyText(t || '', 'Đã copy prompt'); break; }
+    case 'copy-all-prompts': copyText([s.prompt ? '[Prompt gốc]\n' + s.prompt : ''].concat(sortedCh().filter(c => (c.prompt || '').trim()).map(c => `[Chương ${c.num}${c.title ? ': ' + c.title : ''}]\n${c.prompt}`)).filter(Boolean).join('\n\n'), 'Đã copy tất cả prompt'); break;
+    case 'ed-cancel': go(S.editFrom === 'reader' && S.editing.id ? 'reader' : 'story'); break;
+    case 'ed-discard': ls.del(draftKey()); renderEditor(); break;
+    case 'ed-save': saveEditor([...app.querySelectorAll('[data-act=ed-save]')]); break;
+    case 'ed-jump': { app.querySelectorAll('[data-act=ed-jump]').forEach(x => x.classList.remove('on')); b.classList.add('on'); const el = $(b.dataset.k === 'prompt' ? '#ed-prompt' : '#ed-content'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus({ preventScroll: true }); break; }
+    case 'back-story': go('story'); break;
+    case 'rtab': S.readerTab = b.dataset.k; renderReader(); break;
+    case 'goch': if (id) { S.chapterId = id; renderReader(); } break;
+    case 'aa': readerOptions(); break;
+    case 'copy-ch-prompt': copyText((S.chapters.find(c => c.id === S.chapterId) || {}).prompt || '', 'Đã copy prompt'); break;
+    case 'ch-menu': { const c = S.chapters.find(x => x.id === S.chapterId); sheet(`<div class="menu">
+        <button data-x="cc">${I.copy}Copy nội dung chương</button><button data-x="cp">${I.spark}Copy prompt chương</button>
+        <button data-x="ed">${I.edit}Sửa chương</button><button data-x="del" class="d">${I.trash}Xoá chương</button></div><button class="btn" data-x="close">Đóng</button>`, sc => {
+        sc.querySelector('[data-x=close]').onclick = closeSheet;
+        sc.querySelector('[data-x=cc]').onclick = () => { copyText(c.content || '', 'Đã copy nội dung'); closeSheet(); };
+        sc.querySelector('[data-x=cp]').onclick = () => { copyText(c.prompt || '', c.prompt ? 'Đã copy prompt' : 'Chương này chưa có prompt'); closeSheet(); };
+        sc.querySelector('[data-x=ed]').onclick = () => openEditor(c.id);
+        sc.querySelector('[data-x=del]').onclick = () => confirmSheet('Xoá chương ' + esc(c.num) + '?', 'Prompt và nội dung của chương này sẽ bị xoá vĩnh viễn.', 'Xoá chương', () => deleteChapter(c.id).catch(er => toast(errMsg(er))));
+      }); break; }
+  }
+});
+
+/* ---------- flex-gap fallback for old Safari (iOS < 14.1) ---------- */
+(function () {
+  const t = document.createElement('div');
+  t.style.cssText = 'display:flex;flex-direction:column;row-gap:1px;position:absolute;visibility:hidden';
+  t.appendChild(document.createElement('div')); t.appendChild(document.createElement('div'));
+  document.body.appendChild(t); const ok = t.scrollHeight === 1; t.remove();
+  if (ok) return;
+  const SEL = '.bar-in,.search,.lib-head,.chips,.stats-row,.list,.card,.card-b,.meta,.empty,.hero-top,.hero-act,.tabs,.tab,.ch-list,.ch,.pr-list,.pr-h,.info,.info-row,.danger-zone,.ed,.field,.field label,.seg,.seg button,.draft-note,.r-tabs,.r-nav,.r-nav button,.sheet-in,.sheet-act,.opt,.sz,.menu button,.btn,.fab,.sync,.chip';
+  let pending = false;
+  const fix = () => {
+    pending = false;
+    document.querySelectorAll(SEL).forEach(el => {
+      const cs = getComputedStyle(el); if (cs.display.indexOf('flex') < 0) return;
+      const cg = parseFloat(cs.columnGap) || 0, rg = parseFloat(cs.rowGap) || 0;
+      if (!cg && !rg) return;
+      const col = cs.flexDirection.indexOf('column') === 0;
+      let first = true;
+      Array.prototype.forEach.call(el.children, k => {
+        const ks = getComputedStyle(k);
+        if (ks.display === 'none' || ks.position === 'absolute' || ks.position === 'fixed') return;
+        if (first) { first = false; return; }
+        if (col) k.style.marginTop = rg + 'px'; else k.style.marginLeft = cg + 'px';
+      });
+    });
+  };
+  new MutationObserver(() => { if (!pending) { pending = true; requestAnimationFrame(fix); } }).observe(document.body, { childList: true, subtree: true });
+  fix();
+})();
+
+/* ---------- offline: service worker ---------- */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw', e)));
+}
+
+/* ---------- boot ---------- */
+renderLibrary();
+(async () => {
+  await Store.init();
+  const slowT = setTimeout(() => { S.slow = true; if (S.view === 'library') renderLibrary(); }, 10000);
+  Store.watchStories((list, meta) => {
+    S.stories = list;
+    if (!meta.fromCache || list.length) { S.storiesReady = true; S.slow = false; clearTimeout(slowT); }
+    if (S.view === 'library') renderLibrary();
+    else if (S.view === 'story') renderStory();
+  }, () => { S.storiesReady = true; clearTimeout(slowT); if (S.view === 'library') renderLibrary(); toast('Không kết nối được kho truyện'); });
+})();
+})();
+</script>
+</body>
+</html>
